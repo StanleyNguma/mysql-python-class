@@ -52,10 +52,13 @@ class MysqlPython(object):
         values = tuple(kwargs.values())
         l = len(keys) - 1
 
-        for i, key in enumerate(keys):
-            query += "`"+key+"`"
-            if i < l:
-                query += ","
+        if keys:
+            for i, key in enumerate(keys):
+                query += "`" + key + "`"
+                if i < l:
+                    query += ","
+        else:
+            query += '*'
         ## End for keys
 
         query += 'FROM %s' % table
