@@ -4,6 +4,7 @@
 import MySQLdb, sys
 from collections import OrderedDict
 
+
 class MysqlPython(object):
     """
         Python Class for connecting  with MySQL server and accelerate development project using MySQL
@@ -68,20 +69,24 @@ class MysqlPython(object):
         ## End if where
 
         self.__open()
-        self.__session.execute(query, values)
-        number_rows = self.__session.rowcount
-        number_columns = len(self.__session.description)
-
-        if number_rows >= 1 and number_columns > 1:
-            result = [item for item in self.__session.fetchall()]
-        else:
-            result = [item[0] for item in self.__session.fetchall()]
-        self.__close()
-
-        return result
+        try:
+            self.__session.execute(query, values)
+            number_rows = self.__session.rowcount
+            number_columns = len(self.__session.description)
+            if number_rows >= 1 and number_columns > 1:
+                result = [item for item in self.__session.fetchall()]
+            else:
+                result = [item[0] for item in self.__session.fetchall()]
+            return result
+        except (MySQLdb.Error, MySQLdb.Warning) as e:
+            print(e)
+            return None
+        finally:
+            self.__close()
     ## End def select
 
     def update(self, table, where=None, *args, **kwargs):
+        update_rows = 0
         query  = "UPDATE %s SET " % table
         keys   = kwargs.keys()
         values = tuple(kwargs.values()) + tuple(args)
@@ -95,19 +100,22 @@ class MysqlPython(object):
         query += " WHERE %s" % where
 
         self.__open()
-        self.__session.execute(query, values)
-        self.__connection.commit()
-
-        # Obtain rows affected
-        update_rows = self.__session.rowcount
-        self.__close()
-
+        try:
+            self.__session.execute(query, values)
+            self.__connection.commit()
+            # Obtain rows affected
+            update_rows = self.__session.rowcount
+        except (MySQLdb.Error, MySQLdb.Warning) as e:
+            print (e)
+        finally:
+            self.__close()
         return update_rows
-    ## End function update
+    # End function update
 
     def insert(self, table, *args, **kwargs):
+        last_row_insert_id = None
         values = None
-        query = "INSERT INTO %s " % table
+        query = "INSERT "+" INTO %s " % table
         if kwargs:
             keys = kwargs.keys()
             values = tuple(kwargs.values())
@@ -117,29 +125,37 @@ class MysqlPython(object):
             query += " VALUES(" + ",".join(["%s"]*len(values)) + ")"
 
         self.__open()
-        self.__session.execute(query, values)
-        self.__connection.commit()
-        self.__close()
-        return self.__session.lastrowid
-    ## End def insert
+        try:
+            self.__session.execute(query, values)
+            self.__connection.commit()
+            last_row_insert_id = self.__session.lastrowid
+        except (MySQLdb.Error, MySQLdb.Warning) as e:
+            print (e)
+        finally:
+            self.__close()
+        return last_row_insert_id
+    # End def insert
 
     def delete(self, table, where=None, *args):
-        query = "DELETE FROM %s" % table
+        delete_rows = 0
+        query = "DELETE "+" FROM %s" % table
         if where:
             query += ' WHERE %s' % where
 
         values = tuple(args)
 
         self.__open()
-        self.__session.execute(query, values)
-        self.__connection.commit()
-
-        # Obtain rows affected
-        delete_rows = self.__session.rowcount
-        self.__close()
-
+        try:
+            self.__session.execute(query, values)
+            self.__connection.commit()
+            # Obtain rows affected
+            delete_rows = self.__session.rowcount
+        except (MySQLdb.Error, MySQLdb.Warning) as e:
+            print (e)
+        finally:
+            self.__close()
         return delete_rows
-    ## End def delete
+    # End def delete
 
     def select_advanced(self, sql, *args):
         od = OrderedDict(args)
